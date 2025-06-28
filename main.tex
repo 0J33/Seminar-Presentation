@@ -1,0 +1,673 @@
+\documentclass{beamer}
+\usetheme{Copenhagen}
+\usecolortheme{default}
+
+\usepackage{stmaryrd}
+\usepackage{amsmath, amssymb}
+\usepackage{tikz}
+
+\setbeamertemplate{headline}{}
+%Information to be included in the title page:
+\title{A Variety of Belief Update Operators}
+\author{Omar Gamal 52-9805 \\Abdullah Elnahas 52-4957}
+\institute{Supervised by: \textbf{Prof. Haythem O. Ismail}}
+\date{May 14, 2025}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\section{Introduction}
+
+\section{Language and Preliminaries}
+\subsection{Syntax and Atoms}
+
+\section{Update Operators}
+\subsection{PMA, FORBUS, MCD, MCD*, WSS, WSS↓, WSS$^{\text{dep}}$, WSS$\downarrow^{\text{dep}}$, MCE, and $MPMA^{\gg}$}
+
+\section{Strength Comparison}
+
+\section{KM Postulates Evaluation}
+\subsection{Postulate Satisfaction}
+\subsection{Violations and Justifications}
+
+\subsection{Failure of PMA}
+\subsection{Better Handling in MCD, MCE}
+
+\section{Integrity Constraints}
+
+\section{Other Approaches}
+
+\section{Conclusion}
+
+\begin{frame}
+\frametitle{Outline}
+\small
+\tableofcontents
+\end{frame}
+
+%=========INTRO=========%
+
+\begin{frame}
+\frametitle{Introduction: Why Belief Update?}
+\begin{itemize}
+    \item Belief bases = sets of propositional formulas an agent believes.
+    \item The world can change, then beliefs must adapt.
+    \item Goal: update beliefs with minimal change.
+\end{itemize}
+\end{frame}
+
+%=========LANGUAGE AND PRELIMINARIES=========%
+
+\begin{frame}
+\frametitle{Propositional Language}
+\begin{itemize}
+    \item The language is built from a set of atomic propositions: $\text{ATM} = \{p, q, r, \ldots\}$.
+    \item Formulas are constructed using:
+    \[
+        \neg, \quad \wedge, \quad \vee, \quad \rightarrow, \quad \leftrightarrow, \quad \bot, \quad \top
+    \]
+    \item A \textbf{literal} is an atom or its negation: $p$, $\neg p$
+    \item A \textbf{clause} is a disjunction of literals: $p \vee \neg q \vee r$
+    \item We use $\mathit{atm}$ to refer to the set of atoms used in a specific formula.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Redundant Atoms}
+\begin{itemize}
+    \item An atom $p$ is \textbf{redundant in} $A$ if changing its value does not affect the truth of $A$.
+    \item Formally:
+    \[
+    A[p / \top] \leftrightarrow A[p / \bot]
+    \]
+    \item This allows simplification of formulas and belief bases.
+\end{itemize}
+\pause
+\begin{block}{Example}
+$q \wedge (q \vee p)$ \\
+$p$ is redundant because the formula is logically equivalent to just $q$.
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Prime Implicates}
+\begin{itemize}
+    \item A \textbf{clause} $c$ is an \textbf{implicate} of $A$ if $A \rightarrow c$.
+    \item A \textbf{prime implicate} is a minimal implicate. Removing any literal would break the entailment.
+    \item A \textbf{covering set} of prime implicates uniquely determines $A$.
+\end{itemize}
+\pause
+\begin{block}{Example}
+If $A = p \wedge q$, then $\{p\}$ and $\{q\}$ are prime implicates, but $\{p \vee q\}$ is not minimal.
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Interpretations and Distance}
+\begin{itemize}
+    \item An \textbf{interpretation} $w$ assigns a truth value to each atom in $\mathit{atm}$.
+    \item $\llbracket A \rrbracket$ = set of interpretations where $A$ is true.
+    \item Distance between two worlds $w$ and $v$:
+    \[
+        \text{DIST}(w, v) = \{p \in \mathit{atm} : w(p) \ne v(p)\}
+    \]
+\end{itemize}
+\pause
+\begin{block}{Example}
+$w = \{p, q, \neg r\}, \quad v = \{p, \neg q, r\}$  
+$\Rightarrow \text{DIST}(w, v) = \{q, r\}$
+\end{block}
+\end{frame}
+
+% Intuitions
+
+\begin{frame}
+\frametitle{Agent Assumptions}
+\begin{itemize}
+    \item (1) The belief base represents the agent's view of the actual world, using propositional formulas.
+    \item (2) The agent receives input via sensors. This input is propositional as well.
+    \item (3) The input is assumed to reflect an event that really occurred in the world.
+    \item (4) The agent updates the belief base while staying as close as possible to what was previously believed.
+    \item (5) The agent does not know if the input is noisy or incorrect.
+\end{itemize}
+\pause
+\begin{block}{Implication}
+These assumptions shape the behavior and justification of different update operators.
+\end{block}
+\end{frame}
+
+%=========UPDATE OPERATORS=========%
+
+\begin{frame}
+\frametitle{Update Operators Overview}
+\begin{itemize}
+    \item Belief update modifies the current world $w$ to make $A$ true with minimal change.
+    \item Different operators use different definitions of “minimal.”
+    \item We cover 10 operators: PMA, FORBUS, MCD, MCD*, WSS, WSS$\downarrow$, WSS$^{\text{dep}}$, WSS$\downarrow^{\text{dep}}$, MCE, and MPMA$^{\gg}$.
+    \item Some operators are designed with specific environments in mind (e.g., causality, sensor noise, known variable constraints).
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{PMA (Possible Models Approach)}
+\begin{itemize}
+    \item Idea: Keep the models of $A$ that are \textbf{closest} to $w$ using \textbf{set inclusion} on differences.
+    \item Defined by:
+    \[
+    w \cdot_{pma} [[A]] = 
+    \]
+    \[
+    \{\, u \in [[A]] : \forall u' \in [[A]], \text{DIST}(w, u') \not\subset \text{DIST}(w, u) \,\}
+    \]
+    \item Satisfies all KM postulates.
+    \item Treats disjunctions as exclusive-or (XOR, $\oplus$).
+    \pause
+    \begin{block}{Example}
+    Let $w = \{\neg p, \neg q\}$ and $A = p \lor q$.
+    
+    PMA returns:
+    \[
+    \{p, \neg q\}, \quad \{\neg p, q\}
+    \]
+    
+    It excludes:
+    \[
+    \{p, q\}
+    \]
+    
+    This shows that PMA treats $p \lor q$ as exclusive-or.
+    \end{block}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{FORBUS (Numeric Minimal Change)}
+\begin{itemize}
+    \item Like PMA, but minimizes the \textbf{number of differing atoms} instead of subset inclusion.
+    \item Prefers models with the \textbf{smallest distance cardinality}.
+    \item Still satisfies all KM postulates.
+    \item Also treats disjunctions as exclusive.
+\end{itemize}
+\pause
+\[
+w \cdot_{forbus} [[A]] = 
+\]
+\[
+\{ u \in [[A]] : \forall u' \in [[A]],\ \text{card}(\text{DIST}(w, u)) \leq \text{card}(\text{DIST}(w, u')) \}
+\]
+\pause
+\small
+\begin{block}{Example}
+Let $w = \{\neg p, \neg q\}$ and $A = p \lor q$.
+
+Forbus selects:
+\[
+\{p, \neg q\}, \quad \{\neg p, q\}
+\]
+
+It excludes:
+\[
+\{p, q\} \quad \text{since } \text{card}(\text{DIST}(w, \{p, q\})) = 2
+\]
+
+The selected models have distance 1 from $w$.
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{MCD (Cone Expansion)}
+\begin{itemize}
+    \item MCD starts with PMA results.
+    \item Then it adds all models that contain them (supersets).
+    \item This set is called the "cone" of the original models.
+    \item The goal is to include nearby models that still satisfy $A$.
+    \item This fixes the disjunction issue by keeping more possible outcomes.
+\end{itemize}
+\pause
+\begin{block}{Example}
+$w = \{\neg p, \neg q\},\quad A = p \lor q$
+
+PMA returns:
+\[
+\{p, \neg q\}, \quad \{\neg p, q\}
+\]
+
+MCD adds:
+\[
+\{p, q\}
+\]
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{MCD* (Fixpoint Extension)}
+\small
+\begin{itemize}
+    \item MCD* applies the MCD step repeatedly.
+    \item It keeps expanding the set of models until no more can be added.
+    \item This is called reaching a fixpoint.
+    \item MCD* includes the widest possible update set while still satisfying $A$.
+    \item It gives better uncertainty handling than PMA or Forbus.
+\end{itemize}
+\pause
+\small
+\begin{block}{Example}
+Let $w = \{\neg p, \neg q, \neg r\}$ and $A = p \lor q$.
+
+PMA returns:
+\[
+\{p\}, \quad \{q\}
+\]
+
+MCD adds:
+\[
+\{p, q\}, \quad \{p, r\}, \quad \{q, r\}, \quad \{p, q, r\}
+\]
+
+MCD* continues expanding:
+\[
+\{p, q, r, s\}, \quad \{p, q, r, t\}, \ldots
+\]
+
+It includes all supersets of these that still satisfy $A$, until no new ones can be added.
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{WSS and WSS$\downarrow$}
+\small
+\begin{itemize}
+    \item \textbf{WSS}: Only atoms that appear in the formula $A$ are allowed to change. All other atoms must stay fixed.
+    \item This makes WSS very syntax-sensitive. Even logically useless atoms can freeze their value.
+    \item \textbf{WSS$\downarrow$}: First removes redundant parts of $A$ (like tautologies), then applies WSS.
+    \item This makes it more semantic and less sensitive to how $A$ is written.
+    \item WSS$\downarrow$ is also called Hegner or MPMA.
+\end{itemize}
+\pause
+\small
+\begin{block}{Example}
+Let $w = \{\neg p, \neg q, \neg r, \neg s\}$ and $A = (p \lor q) \land r \land (s \lor \neg s)$
+
+\textbf{In WSS}:
+All atoms that appear in $A$ ($p$, $q$, $r$, $s$) are tracked.
+So $s$ is frozen, even though $(s \lor \neg s)$ is always true.
+
+\textbf{In WSS$\downarrow$}:
+The tautology $(s \lor \neg s)$ is removed.
+Now $s$ is no longer considered part of the update.
+So $s$ can change freely if needed.
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{MCE (Minimal Change with Exceptions)}
+\begin{itemize}
+    \item Based on WSS$\downarrow$, but allows certain atoms to change when needed to avoid conflicts.
+    \item Computes an exception set using the prime implicates of the belief base.
+    \item These atoms can change even if they don’t appear in $A$.
+    \item Allows better handling of disjunctions than PMA.
+    \item Not all KM postulates are satisfied.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{MCE Example}
+\begin{block}{Example}
+Let $w = \{\neg p, \neg q, r\}$ and $A = p \lor q$.
+
+WSS$\downarrow$:
+Only $p$ and $q$ can change. $r$ is frozen.
+
+MCE:
+If $r$ causes a conflict with a prime implicate of the belief base, it is added to the exception set.
+
+Now $r$ can change, making models like $\{p, \neg r\}$ or $\{q, \neg r\}$ valid.
+\end{block}
+
+\begin{block}{Why $r$ Matters Here}
+\begin{itemize}
+    \item Suppose the belief base $B$ implies $p \rightarrow \neg r$ (i.e., $\neg p \lor \neg r$ is a prime implicate).
+    \item Updating $w$ with $A$ might give $\{p, r\}$ which violates this implicate.
+    \item MCE resolves the conflict by unfreezing $r$, allowing $\{p, \neg r\}$ as a valid updated world.
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{WSS$^{\text{dep}}$ and WSS$\downarrow^{\text{dep}}$}
+\begin{itemize}
+    \item These are dependency-aware versions of WSS and WSS$\downarrow$.
+    \item They allow changes to atoms that \textbf{depend on} those in $A$.
+    \item A dependency means: the value of one atom is logically or causally linked to another.
+    \item This makes updates more flexible and realistic in structured environments.
+\end{itemize}
+\pause
+\begin{block}{Example}
+If $q$ always depends on $p$, then updating $p$ may allow $q$ to change too.
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{MPMA$^{\gg}$ (Modified PMA with Causal Rules)}
+\begin{itemize}
+    \item Based on WSS$\downarrow$, but adds \textbf{causal rules} of the form: $A \Rightarrow C$.
+    \item If $A$ becomes true, then $C$ must also become true.
+    \item Good for modeling real-world consequences of actions (e.g., pressing a button causes light to turn on).
+    \item Can enforce integrity constraints and reflect domain-specific rules.
+    \item MPMA$^{\gg}$ = WSS$\downarrow$ + causality.
+\end{itemize}
+\pause
+\begin{block}{Example}
+Let $A =$ “button pressed”, and rule: $A \Rightarrow C$.
+
+Then MPMA$^{\gg}$ ensures $C =$ “light on” is also included in the updated world.
+\end{block}
+\end{frame}
+
+%=========STRENGTH COMPARISON=========%
+
+\begin{frame}
+\frametitle{Update Operator Relations}
+We'll explore the key relationships between different belief update operators using lemmas and theorems from the paper "Propositional Belief Base Update".
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Lemma 16: FORBUS $\subseteq$ PMA}
+\textbf{Statement:} For all new information $A$ and world $w$, $w \circ_{Forbus} A \subseteq w \circ_{PMA} A$.
+
+\textbf{Proof Idea:}
+\begin{itemize}
+\item Assume $u \in w \circ_{Forbus} A$ but $u \notin w \circ_{PMA} A$
+\item Then there exists $v \in w \circ_{PMA} A$ with $DIST(w, v) < DIST(w, u)$
+\item This contradicts the FORBUS definition (selects \textit{closest} models)
+\item Hence, any model accepted by FORBUS must also be accepted by PMA
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Lemma 18: MCD ⊆ MCD*}
+\textbf{Statement:} $w \circ_{MCD} A \subseteq w \circ_{MCD^*} A$
+
+\textbf{Key Idea:}
+\begin{itemize}
+\item MCD*: recursively explores models when a cone contains \textgreater 1 minimal model
+\item It goes deeper: builds cones over new models and re-applies PMA
+\item So MCD* may uncover additional justified models not found by MCD
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Lemma 19: MCE and MCD Incomparable}
+\textbf{Statement:} There exist $w, A$ such that:
+\begin{itemize}
+\item $w \circ_{MCE} A \not\subseteq w \circ_{MCD} A$
+\item $w \circ_{MCD} A \not\subseteq w \circ_{MCE} A$
+\end{itemize}
+
+% \textbf{Example:}
+% \begin{itemize}
+% \item $w = {\neg p, \neg q, \neg r}$
+% \item $A$ has models: $v_1 = {\neg p, q, \neg r}$, $v_2 = {p, \neg q, \neg r}$, $v_3 = {p, q, r}$
+% \item Prime implicate failed: $p \lor q$ $\Rightarrow EXC(A) = {p, q}$
+% \item $v_3$ changes $r \notin EXC(A)$ $\Rightarrow v_3 \notin MCE(w, A)$
+% \item But $v_3$ is logically supported via cones $\Rightarrow v_3 \in MCD(w, A)$
+% \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Lemma 20: Literal in Prime Implicates}
+\textbf{Statement:} If literal $L$ appears in a prime implicate of $A$, then some model of $A$ satisfies $L$.
+
+\textbf{Proof Idea:}
+\begin{itemize}
+\item Assume $L \lor c$ is a prime implicate, but $L$ is false in all models
+\item Then $A \Rightarrow \neg L$ $\Rightarrow A \Rightarrow c$
+\item So $L \lor c$ not minimal; $c$ alone suffices $\Rightarrow$ contradiction
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Theorem 21: Only Clauses False in $w$ Matter}
+\textbf{Statement:} $w \circ_{PMA}(C1 \cup C2) = w \circ_{PMA}(C2)$ where $C1$ = clauses true in $w$, $C2$ = false ones.
+
+\textbf{Explanation:}
+\begin{itemize}
+\item PMA minimizes changes needed to satisfy input
+\item If clause in $C1$ is already true, it doesn’t influence model selection
+\item Proof uses induction: show adding one satisfied clause doesn't change result
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Theorem 22: Difference Atoms = Exceptional Atoms}
+\textbf{Statement:} $\bigcup_{v \in w \circ_{PMA} A} DIST(w, v) = atm(C2) = EXC(A)$
+
+\textbf{Interpretation:}
+\begin{itemize}
+\item The atoms that change in PMA models are exactly those in falsified prime implicates
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Theorem 23: PMA ⊆ MCE}
+\textbf{Statement:} $w \circ_{PMA} A \subseteq w \circ_{MCE} A$, but not equal
+
+\textbf{Explanation:}
+\begin{itemize}
+\item PMA: closest models to $w$
+\item MCE: any model differing only on exceptional atoms
+% \item Example 13 shows MCE can include more than PMA
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Theorem 24: MCE ⊆ WSS}
+\textbf{Statement:} $w \circ_{MCE} A \subseteq w \circ_{WSS} A$, and sometimes strictly
+
+\textbf{Explanation:}
+\begin{itemize}
+\item MCE: respects exceptions (EXC(A))
+\item WSS: allows changes on any atom in $atm(A)$
+\item WSS may include models that MCE rejects
+\end{itemize}
+\end{frame}
+
+%=========KM POSTULATES=========%
+
+\begin{frame}
+\frametitle{The KM Postulates}
+\begin{itemize}
+    \item Katsuno and Mendelzon proposed 8 rationality postulates for belief update.
+    \item PMA and FORBUS satisfy all 8. Others satisfy only some.
+    \item The postulates define how updates should behave logically and semantically.
+\end{itemize}
+\pause
+\begin{block}{Notation}
+$B \diamond A$ = update of belief base $B$ with formula $A$
+\end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Core KM Postulates (U1–U4)}
+\begin{itemize}
+    \item \textbf{(U1)} After update, the new info must hold. \\
+    $\quad B \diamond A \rightarrow A$
+    
+    \item \textbf{(U2)} If $B$ already implies $A$, then updating changes nothing. \\
+    $\quad B \rightarrow A \Rightarrow B \diamond A \equiv B$
+    
+    \item \textbf{(U3)} If $B$ and $A$ are consistent, so is the update. \\
+    $\quad B \diamond A$ is consistent if $B$ and $A$ are.
+    
+    \item \textbf{(U4)} Equivalent formulas update the same way. \\
+    $\quad A_1 \equiv A_2 \Rightarrow B \diamond A_1 \equiv B \diamond A_2$
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Advanced KM Postulates (U5–U6)}
+\begin{itemize}
+    \item \textbf{(U5)} Updating with $A \wedge C$ should include $C$ in the result. \\
+    $\quad B \diamond (A \wedge C) \rightarrow (B \diamond A) \wedge C$
+    
+    \item \textbf{(U6)} If two inputs imply each other after update, treat them the same. \\
+    $\quad B \diamond A_1 \rightarrow A_2$ and $B \diamond A_2 \rightarrow A_1$ \\
+    $\Rightarrow B \diamond A_1 \equiv B \diamond A_2$
+    
+    \item \textbf{(U7–U8)} Less common chaining rules, not covered in this paper.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Operator Postulate Satisfaction}
+\begin{itemize}
+    \item \textbf{PMA, Forbus:} satisfy all postulates. Very strict, minimal change.
+    \item \textbf{MCD, MCD*, MCE:} violate (U2) and (U5) to support disjunctions.
+    \item \textbf{WSS:} violates (U2), (U4), and others due to syntax sensitivity.
+    \item \textbf{WSS$\downarrow$, MPMA$^{\gg}$:} more semantic than WSS, but still violate some postulates.
+    \item \textbf{WSS$^{\text{dep}}$, WSS$\downarrow^{\text{dep}}$:} improve flexibility via dependencies, but still not fully compliant.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Violations and Justifications}
+\begin{itemize}
+    \item \textbf{(U2):} Violated when $A$ is already implied by $B$ but introduces ambiguity (e.g., $p \lor q$).
+    \item \textbf{(U5):} Leads to exclusive-or behavior. Only one disjunct survives, even if both are possible.
+\end{itemize}
+\pause
+\begin{block}{Example}
+$B = \neg p \wedge \neg q$, $A = p \lor q$ \\
+PMA returns only $\{p, \neg q\}$ and $\{\neg p, q\}$ \\
+Excludes $\{p, q\}$ even though it satisfies $A$
+\end{block}
+\begin{itemize}
+    \item This reflects a mismatch between strict logic and real-world reasoning.
+    \item For example, sensors might detect “someone moved” but not say who, then the input is $p \lor q$.
+    \item Allowing both $\{p\}$ and $\{q\}$ and even $\{p, q\}$ is more reasonable.
+\end{itemize}
+\end{frame}
+
+%=========INTEGRITY CONSTRAINTS=========%
+\begin{frame}
+\frametitle{Handling Integrity Constraints}
+\textbf{Goal:} Ensure belief update operations respect constraints that must always hold, regardless of new information.
+
+\textbf{Example:}
+\begin{itemize}
+\item IC: $Light \Leftrightarrow (Up1 \Leftrightarrow Up2)$
+\item This must remain true in all updated belief states
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{The Problem with Conjoining IC to Input}
+\textbf{Old approach:} $B \circ_{IC} A = B \circ (A \land IC)$
+
+\textbf{Issue:}
+\begin{itemize}
+\item Operators like PMA, MCD, MCE, WSS mishandle this
+\item Example:
+\begin{itemize}
+\item $B = Up1 \land Up2 \land Light$, update with $\neg Up1$
+\item Expect: only $Up1$ changes, $Up2$ stays, $Light$ turns off
+\item Actual: operators may change $Up2$ or break the IC
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{$MPMA^{\gg}$: Causal PMA Update}
+\textbf{Solution:} Separate causal rules and apply them after minimal change.
+
+\textbf{Update Process:}
+\begin{itemize}
+\item Perform minimal change update with $A$ only
+\item Enforce IC and causal rules after update
+\end{itemize}
+
+\textbf{Formal:}
+
+
+
+\begin{itemize}
+\item $CR$: Causal rules (e.g., $Up1 \Leftrightarrow Up2 \Rightarrow Light$)
+\item $T(CR)$: Translation to implications
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{$WSS_{dep}$: Controlled Atom Updates}
+\textbf{Idea:} Only allow changes to atoms that depend on the input.
+
+\textbf{Steps:}
+\begin{itemize}
+\item Define $dep(p)$: atoms that can change when $p$ changes
+\item $dep(A) = \bigcup dep(p)$ for all atoms $p$ in $A$
+\item Restrict $DIST(w, u) \subseteq dep(A)$
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{$WSS_{dep}$ Example}
+\textbf{Let:}
+\begin{itemize}
+\item $dep(Up1) = {Up1, Light}$
+\item $dep(Up2) = {Up2, Light}$
+\item $dep(Light) = {Up1, Up2, Light}$
+\end{itemize}
+
+Update: $w = {Up1, Up2, Light}$ with $\neg Up1$
+
+\textbf{Allowed Models:}
+\begin{itemize}
+\item ${\neg Up1, Up2, \neg Light}$ \textcolor{green}{✓ valid}
+\item ${\neg Up1, \neg Up2, Light}$ \textcolor{red}{✗ invalid (Up2 changed)}
+\end{itemize}
+
+\textbf{Final step:} Filter models that violate IC
+\end{frame}
+
+%=========OTHER APPROACHES=========%
+\begin{frame}
+\frametitle{Other Approaches to Belief Base Update}
+\begin{itemize}
+\item \textbf{Syntax-Based Methods:} Transform the belief base via formula manipulation rather than models.
+\item \textbf{Relevance/Dependence-Based:} Limit updates to dependent atoms (e.g., $WSS_{dep}$).
+\item \textbf{Causal Reasoning:} Use causal rules or action-based frameworks (e.g., $MPMA^{\gg}$).
+\item \textbf{Belief Merging/Revision:} Merge multiple sources or perform revision under different logic.
+\end{itemize}
+\end{frame}
+
+%=========CONCLUSION=========%
+
+\begin{frame}
+\frametitle{Conclusion}
+\begin{itemize}
+\item Belief update aims to integrate new information with minimal, rational change.
+\item Different operators (PMA, MCD, MCE, etc.) reflect different interpretations of "minimal change".
+\item KM postulates guide the evaluation but are not always satisfied.
+\item Handling integrity constraints (ICs) often requires causal-aware methods like $MPMA^{\gg}$.
+\item No one-size-fits-all: operators should match the needs of the application domain.
+\end{itemize}
+\end{frame}
+
+
+% End
+
+\begin{frame}[c]
+\centering
+\Huge
+\textbf{Thank you!}
+
+\vspace{1cm}
+
+\LARGE
+Questions?
+\end{frame}
+
+\end{document}
